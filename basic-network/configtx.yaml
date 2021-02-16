@@ -1,0 +1,169 @@
+Organizations:
+
+    - &OrdererOrg
+        Name: OrdererOrg
+        ID: OrdererOrg
+        MSPDir: crypto-config/ordererOrganizations/acornpub.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('OrdererOrg.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('OrdererOrg.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('OrdererOrg.admin')"
+        OrdererEndpoints:
+            - orderer.acornpub.com:7050
+
+    - &Sales1Org
+        Name: Sales1Org
+        ID: Sales1Org
+        MSPDir: crypto-config/peerOrganizations/sales1.acornpub.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('Sales1Org.admin', 'Sales1Org.peer', 'Sales1Org.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('Sales1Org.admin', 'Sales1Org.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('Sales1Org.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('Sales1Org.peer')"
+        AnchorPeers:
+            - Host: peer0.sales1.acornpub.com
+              Port: 7051
+
+    - &CustomerOrg
+        Name: CustomerOrg
+        ID: CustomerOrg
+        MSPDir: crypto-config/peerOrganizations/customer.acornpub.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('CustomerOrg.admin', 'CustomerOrg.peer', 'CustomerOrg.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('CustomerOrg.admin', 'CustomerOrg.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('CustomerOrg.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('CustomerOrg.peer')"
+        AnchorPeers:
+            - Host: peer0.customer.acornpub.com
+              Port: 7051
+
+Capabilities:
+    Channel: &ChannelCapabilities
+        V2_0: true
+    Orderer: &OrdererCapabilities
+        V2_0: true
+    Application: &ApplicationCapabilities
+        V2_0: true
+
+Orderer: &OrdererDefaults
+
+    OrdererType: solo
+    Addresses:
+        - orderer.acurnpub.com:7050
+
+   # EtcdRaft:
+   #     Consenters:
+   #     - Host: orderer.example.com
+   #       Port: 7050
+   #       ClientTLSCert: ../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+   #       ServerTLSCert: ../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+    BatchTimeout: 2s
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 99 MB
+        PreferredMaxBytes: 512 KB
+    Kafka:
+        Brokers:
+            - 127.0.0.1:9092
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+
+Application: &ApplicationDefaults
+
+    Organizations:
+
+
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        LifecycleEndorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+        Endorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+    Capabilities:
+        <<: *ApplicationCapabilities
+
+Channel: &ChannelDefaults
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+    Capabilities:
+        <<: *ChannelCapabilities
+
+Profiles:
+
+    OrdererGenesis:
+        <<: *ChannelDefaults
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *OrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
+        Consortiums:
+            SampleConsortium:
+                Organizations:
+                    - *Sales1Org
+                    - *CustomerOrg
+    Channel1:
+        Consortium: SampleConsortium
+        <<: *ChannelDefaults
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *Sales1Org
+                - *CustomerOrg
+            Capabilities:
+                <<: *ApplicationCapabilities
+
+
